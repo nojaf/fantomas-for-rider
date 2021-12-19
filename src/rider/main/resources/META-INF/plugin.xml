@@ -1,0 +1,23 @@
+<idea-plugin require-restart="true">
+  <id>com.jetbrains.rider.plugins.fantomas_for_rider</id>
+  <name>fantomas_for_rider</name>
+  <version>0.1.0</version>
+  <vendor url="https://project-url">nojaf</vendor>
+  <idea-version since-build="_PLACEHOLDER_" until-build="_PLACEHOLDER_" />
+  <depends>com.intellij.modules.rider</depends>
+
+  <description>
+<![CDATA[
+<p>Sample description</p>
+]]>
+  </description>
+
+    <actions>
+        <action id="com.nojaf.rider.plugins.fantomas.FormatCodeAction"
+                class="com.nojaf.rider.plugins.fantomas.FormatCodeAction" text="Format with Fantomas"
+                description="Format an F# document using Fantomas">
+            <keyboard-shortcut keymap="$default" first-keystroke="shift ctrl SEMICOLON"/>
+            <add-to-group group-id="ToolsMenu" anchor="first"/>
+        </action>
+    </actions>
+</idea-plugin>
