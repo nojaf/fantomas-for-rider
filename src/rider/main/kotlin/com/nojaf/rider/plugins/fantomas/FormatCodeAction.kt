@@ -1,5 +1,8 @@
 package com.nojaf.rider.plugins.fantomas
 
+import com.intellij.notification.Notification
+import com.intellij.notification.NotificationType
+import com.intellij.notification.Notifications
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.command.WriteCommandAction
@@ -8,8 +11,8 @@ import com.intellij.openapi.ui.Messages
 import com.jetbrains.rdclient.editors.getPsiFile
 import com.jetbrains.rider.actions.base.RiderAnAction
 
-
-class FormatCodeAction : RiderAnAction("FormatWithFantomas", "Format with Fantomas", "Format the current file with Fantomas") {
+class FormatCodeAction :
+    RiderAnAction("FormatWithFantomas", "Format with Fantomas", "Format the current file with Fantomas") {
     private val logger = logger<FormatCodeAction>()
     private val fantomasService = LspFantomasService()
 
@@ -36,11 +39,40 @@ class FormatCodeAction : RiderAnAction("FormatWithFantomas", "Format with Fantom
         val text = psiFile?.text
         val path = psiFile?.virtualFile?.path
         if (text != null && path != null) {
-            val response = fantomasService.formatDocument(FormatDocumentRequest(text, path)).get()
-            when (response.code) {
-                FantomasResponseCode.Formatted -> response.content.tap {
-                    val r = Runnable { document?.replaceString(0, text.length, it) }
-                    WriteCommandAction.runWriteCommandAction(project, r)
+            fantomasService.formatDocument(FormatDocumentRequest(text, path)).handle { response, ex ->
+                if (ex != null) {
+                    logger.error(ex)
+                } else {
+                    when (response.code) {
+                        FantomasResponseCode.Formatted -> response.content.tap {
+                            val replaceText = Runnable { document?.replaceString(0, text.length, it) }
+                            WriteCommandAction.runWriteCommandAction(project, replaceText)
+                        }
+                        FantomasResponseCode.UnChanged -> logger.info("$path is unchanged")
+                        FantomasResponseCode.Error -> {
+                            response.content.tap {
+                                logger.warn(it)
+                                val showInfoMessage = Runnable {
+                                    Notifications.Bus.notify(
+                                        Notification(
+                                            "fantomas",
+                                            "Error while formatting file",
+                                            "$path could not be formatted.\n$it",
+                                            NotificationType.ERROR
+                                        ), project
+                                    )
+                                }
+                                WriteCommandAction.runWriteCommandAction(project, showInfoMessage)
+                            }
+                        }
+                        FantomasResponseCode.Ignored -> TODO()
+                        FantomasResponseCode.Version -> TODO()
+                        FantomasResponseCode.ToolNotFound -> TODO()
+                        FantomasResponseCode.FileNotFound -> TODO()
+                        FantomasResponseCode.FilePathIsNotAbsolute -> TODO()
+                        FantomasResponseCode.DaemonCreationFailed -> TODO()
+                        FantomasResponseCode.SerializationError -> TODO()
+                    }
                 }
             }
         }
