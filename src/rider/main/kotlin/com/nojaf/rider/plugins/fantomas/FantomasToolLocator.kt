@@ -5,10 +5,7 @@ import net.swiftzer.semver.SemVer
 import org.eclipse.lsp4j.jsonrpc.Launcher
 import java.io.File
 import java.io.IOException
-import java.lang.Exception
-import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.*
 import java.util.concurrent.TimeUnit
 
 private fun <A, B> Either<A, B>.flatMapLeft(f: () -> Either<A, B>): Either<A, B> {
@@ -75,50 +72,6 @@ private fun runToolListCmd(workingDir: Folder, globalFlag: Boolean): Either<Stri
 
 private val isWindows = (System.getProperty("os.name").startsWith("Windows"))
 
-private fun fantomasVersionOnPath(): Option<Pair<FantomasVersion, FantomasExecutableFile>> {
-    val pathSplitter = if (isWindows) ';' else ':'
-    val pathEnv = System.getenv("PATH").orEmpty()
-    val fantomasExecutableFile =
-        pathEnv.split(pathSplitter).mapNotNull { folder ->
-            if (isWindows) {
-                val fantomasExe = Paths.get(folder, "fantomas.exe")
-                val fantomasToolExe = Paths.get(folder, "fantomas-tool.exe")
-                if (File(fantomasExe.toUri()).exists()) fantomasExe else if (File(fantomasToolExe.toUri()).exists()) fantomasToolExe else null
-            } else {
-                null
-            }
-        }.firstOrNone()
-
-    fun getVersion(fantomasExecutableFile: Path): Option<String> {
-        try {
-            val proc =
-                ProcessBuilder(fantomasExecutableFile.toString(), "--version")
-                    .redirectOutput(ProcessBuilder.Redirect.PIPE)
-                    .redirectError(ProcessBuilder.Redirect.PIPE)
-                    .start()
-                    .also {
-                        it.waitFor(1, TimeUnit.MINUTES)
-                    }
-            if (proc.exitValue() != 0) {
-                val error = proc.errorStream.bufferedReader().readText(); println(error)
-            }
-            return proc.inputStream.bufferedReader().readText().lowercase(Locale.getDefault()).replace("fantomas v", "")
-                .split("+")[0].trim().some()
-        } catch (e: IOException) {
-            return none()
-        }
-    }
-    // "No compatible fantomas version found on PATH ($pathEnv)".left()
-    return fantomasExecutableFile
-        .flatMap { file -> getVersion(file).map { Pair(file, it) } }
-        .flatMap { (file, version) ->
-            if (isCompatibleFantomasVersion(version)) Pair(
-                FantomasVersion(version),
-                FantomasExecutableFile(file.toString())
-            ).some() else none()
-        }
-}
-
 fun findFantomasTool(workingDir: Folder): Either<NoCompatibleVersionFound, FantomasToolFound> {
     return runToolListCmd(workingDir, false)
         .map { FantomasToolFound(it, FantomasToolStartInfo.LocalTool(workingDir)) }
@@ -127,17 +80,6 @@ fun findFantomasTool(workingDir: Folder): Either<NoCompatibleVersionFound, Fanto
                 is Either.Left -> NoCompatibleVersionFound().left()
                 is Either.Right -> {
                     FantomasToolFound(globalResult.value, FantomasToolStartInfo.GlobalTool).right()
-                }
-            }
-        }
-        .flatMapLeft {
-            when (val onPathResult = fantomasVersionOnPath()) {
-                is None -> NoCompatibleVersionFound().left()
-                is Some -> {
-                    FantomasToolFound(
-                        onPathResult.value.first,
-                        FantomasToolStartInfo.ToolOnPath(onPathResult.value.second)
-                    ).right()
                 }
             }
         }
@@ -160,7 +102,6 @@ fun createFor(startInfo: FantomasToolStartInfo): Either<String, RunningFantomasT
                     Paths.get(userProfile, ".dotnet", "tools", fantomasExecutableFile).toString()
                 ProcessBuilder(fantomasExecutableFilePath, "--daemon")
             }
-            is FantomasToolStartInfo.ToolOnPath -> ProcessBuilder("fantomas", "--daemon")
         }
 
     try {
@@ -183,7 +124,7 @@ fun createFor(startInfo: FantomasToolStartInfo): Either<String, RunningFantomasT
         val client = builder.remoteProxy
 
         return try {
-            val version = client.version().get()
+            client.version().get()
             RunningFantomasTool(p, client, startInfo).right()
         } catch (ex: Exception) {
             ex.toString().left()

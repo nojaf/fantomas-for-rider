@@ -124,14 +124,14 @@ class LspFantomasService : FantomasService {
     }
 
     override fun clearCache() {
+        daemons.forEach { entry ->
+            entry.value.process.destroy()
+        }
         daemons.clear()
         folderToVersion.clear()
     }
 
-    override fun close() {
-        daemons.forEach { entry ->
-            entry.value.process.destroy()
-        }
+    override fun dispose() {
         clearCache()
     }
 }

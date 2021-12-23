@@ -1,28 +1,13 @@
 package com.nojaf.rider.plugins.fantomas
 
 import arrow.core.Option
+import com.intellij.openapi.Disposable
 import net.swiftzer.semver.SemVer
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment
-import java.io.Closeable
 import java.util.concurrent.CompletableFuture
 
 data class FSharpDiscriminatedUnion(val Case: String, val Fields: Array<String>)
-
-/*
-{
-    "SourceCode": "module Foo\n\nlet a = //\n    4",
-    "FilePath": "C:\\Users\\nojaf\\AppData\\Local\\Temp\\3266c667-8f85-4c12-847e-da281eae8b40.fs",
-    "Config": {
-    "Case": "Some",
-    "Fields": [
-    {
-        "end_of_line": "lf"
-    }
-    ]
-}
-}
-*/
 data class EndOfLine(val end_of_line: String)
 data class Configuration(val Case: String, val Fields: Array<EndOfLine>)
 data class FormatDocumentRequest(val sourceCode: String, val filePath: String, val config: Configuration = Configuration("Some", arrayOf(EndOfLine("lf"))))
@@ -88,7 +73,6 @@ value class FantomasExecutableFile(val value: String)
 sealed interface FantomasToolStartInfo {
     data class LocalTool(val workingDirectory: Folder) : FantomasToolStartInfo
     object GlobalTool : FantomasToolStartInfo
-    data class ToolOnPath(val executableFile: FantomasExecutableFile) : FantomasToolStartInfo
 }
 
 data class FantomasToolFound(val version: FantomasVersion, val startInfo: FantomasToolStartInfo)
@@ -108,7 +92,7 @@ enum class FantomasResponseCode {
 
 data class FantomasResponse(val code: FantomasResponseCode, val filePath: String, val content: Option<String>)
 
-interface FantomasService : Closeable {
+interface FantomasService : Disposable {
     fun version(filePath: String): CompletableFuture<FantomasResponse>
     fun formatDocument(request: FormatDocumentRequest): CompletableFuture<FantomasResponse>
     fun clearCache()

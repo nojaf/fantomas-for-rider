@@ -1,8 +1,8 @@
 <idea-plugin require-restart="true">
-  <id>com.jetbrains.rider.plugins.fantomas_for_rider</id>
-  <name>fantomas_for_rider</name>
+  <id>com.nojaf.rider.plugins.fantomas</id>
+  <name>Fantomas</name>
   <version>0.1.0</version>
-  <vendor url="https://project-url">nojaf</vendor>
+  <vendor url="https://github.com/nojaf/fantomas-for-rider">nojaf</vendor>
   <idea-version since-build="_PLACEHOLDER_" until-build="_PLACEHOLDER_" />
   <depends>com.intellij.modules.rider</depends>
 
@@ -11,7 +11,6 @@
 <p>Sample description</p>
 ]]>
   </description>
-
     <actions>
         <action id="com.nojaf.rider.plugins.fantomas.FormatCodeAction"
                 class="com.nojaf.rider.plugins.fantomas.FormatCodeAction" text="Format with Fantomas"
@@ -20,4 +19,9 @@
             <add-to-group group-id="ToolsMenu" anchor="first"/>
         </action>
     </actions>
+    <extensions defaultExtensionNs="com.intellij">
+        <notificationGroup id="Fantomas" displayType="BALLOON" />
+        <applicationService serviceImplementation="com.nojaf.rider.plugins.fantomas.LspFantomasService"
+                            serviceInterface="com.nojaf.rider.plugins.fantomas.FantomasService" />
+    </extensions>
 </idea-plugin>
