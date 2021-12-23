@@ -1,6 +1,7 @@
 package com.nojaf.rider.plugins.fantomas
 
 import arrow.core.*
+import com.intellij.openapi.diagnostic.logger
 import java.io.File
 import java.util.concurrent.CompletableFuture
 
@@ -22,30 +23,29 @@ private fun getFolderFor(filePath: String): Either<FantomasServiceError, Folder>
 }
 
 private fun mapFantomasServiceErrorToFantomasResponse(
-    filePath: String,
-    error: FantomasServiceError
+    filePath: String, error: FantomasServiceError
 ): CompletableFuture<FantomasResponse> {
-    val response =
-        when (error) {
-            is FileDoesNotExist ->
-                FantomasResponse(FantomasResponseCode.FileNotFound, filePath, None)
-            is FilePathIsNotAbsolute ->
-                FantomasResponse(FantomasResponseCode.FilePathIsNotAbsolute, filePath, None)
-            is InCompatibleVersionFound ->
-                FantomasResponse(FantomasResponseCode.ToolNotFound, filePath, None)
-            is DaemonCouldNotBeStarted ->
-                FantomasResponse(FantomasResponseCode.DaemonCreationFailed, filePath, error.reason.some())
-        }
+    val response = when (error) {
+        is FileDoesNotExist -> FantomasResponse(FantomasResponseCode.FileNotFound, filePath, None)
+        is FilePathIsNotAbsolute -> FantomasResponse(FantomasResponseCode.FilePathIsNotAbsolute, filePath, None)
+        is InCompatibleVersionFound -> FantomasResponse(FantomasResponseCode.ToolNotFound, filePath, None)
+        is DaemonCouldNotBeStarted -> FantomasResponse(
+            FantomasResponseCode.DaemonCreationFailed,
+            filePath,
+            error.reason.some()
+        )
+    }
     return CompletableFuture.completedFuture(response)
 }
 
 class LspFantomasService : FantomasService {
+    private val logger = logger<LspFantomasService>()
     private val daemons = mutableMapOf<FantomasVersion, RunningFantomasTool>()
     private val folderToVersion = mutableMapOf<Folder, FantomasToolFound>()
 
     private fun getDaemonFromFolder(folder: Folder): Either<FantomasServiceError, RunningFantomasTool> {
         fun findOrCreateDaemon(toolFound: FantomasToolFound): Either<FantomasServiceError, RunningFantomasTool> {
-            return when (val daemon = createFor(toolFound.startInfo)) {
+            return when (val daemon = createFor(logger, toolFound.startInfo)) {
                 is Either.Left -> DaemonCouldNotBeStarted(daemon.value).left()
                 is Either.Right -> {
                     daemons[toolFound.version] = daemon.value
@@ -97,24 +97,16 @@ class LspFantomasService : FantomasService {
                 return daemon.value.client.formatDocument(request).thenApply {
                     when (val response = FormatDocumentResponse.tryParse(it)) {
                         is FormatDocumentResponse.Formatted -> FantomasResponse(
-                            FantomasResponseCode.Formatted,
-                            request.filePath,
-                            response.formattedContent.toOption()
+                            FantomasResponseCode.Formatted, request.filePath, response.formattedContent.toOption()
                         )
                         is FormatDocumentResponse.Unchanged -> FantomasResponse(
-                            FantomasResponseCode.UnChanged,
-                            request.filePath,
-                            None
+                            FantomasResponseCode.UnChanged, request.filePath, None
                         )
                         is FormatDocumentResponse.Error -> FantomasResponse(
-                            FantomasResponseCode.Error,
-                            request.filePath,
-                            response.formattingError.toOption()
+                            FantomasResponseCode.Error, request.filePath, response.formattingError.toOption()
                         )
                         is FormatDocumentResponse.IgnoredFile -> FantomasResponse(
-                            FantomasResponseCode.Ignored,
-                            request.filePath,
-                            none()
+                            FantomasResponseCode.Ignored, request.filePath, none()
                         )
                         null -> FantomasResponse(FantomasResponseCode.SerializationError, request.filePath, None)
                     }

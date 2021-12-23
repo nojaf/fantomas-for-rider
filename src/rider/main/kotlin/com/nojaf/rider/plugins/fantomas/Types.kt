@@ -10,7 +10,12 @@ import java.util.concurrent.CompletableFuture
 data class FSharpDiscriminatedUnion(val Case: String, val Fields: Array<String>)
 data class EndOfLine(val end_of_line: String)
 data class Configuration(val Case: String, val Fields: Array<EndOfLine>)
-data class FormatDocumentRequest(val sourceCode: String, val filePath: String, val config: Configuration = Configuration("Some", arrayOf(EndOfLine("lf"))))
+data class FormatDocumentRequest(
+    val sourceCode: String,
+    val filePath: String,
+    val config: Configuration = Configuration("Some", arrayOf(EndOfLine("lf")))
+)
+
 data class FormatSelectionRange(val startLine: Int, val startColumn: Int, val endLine: Int, val endColumn: Int)
 data class FormatSelectionRequest(val sourceCode: String, val filePath: String, val range: FormatSelectionRange)
 
@@ -22,9 +27,13 @@ sealed interface FormatDocumentResponse {
     companion object Static {
         fun tryParse(rawResponse: FSharpDiscriminatedUnion): FormatDocumentResponse? {
             return when {
-                rawResponse.Case == "Formatted" && rawResponse.Fields.size == 2 -> Formatted(rawResponse.Fields[0], rawResponse.Fields[1])
+                rawResponse.Case == "Formatted" && rawResponse.Fields.size == 2 -> Formatted(
+                    rawResponse.Fields[0], rawResponse.Fields[1]
+                )
                 rawResponse.Case == "Unchanged" && rawResponse.Fields.size == 1 -> Unchanged(rawResponse.Fields[0])
-                rawResponse.Case == "Error" && rawResponse.Fields.size == 2 -> Error(rawResponse.Fields[0], rawResponse.Fields[1])
+                rawResponse.Case == "Error" && rawResponse.Fields.size == 2 -> Error(
+                    rawResponse.Fields[0], rawResponse.Fields[1]
+                )
                 rawResponse.Case == "IgnoredFile" && rawResponse.Fields.size == 1 -> IgnoredFile(rawResponse.Fields[0])
                 else -> return null
             }
@@ -38,8 +47,12 @@ sealed interface FormatSelectionResponse {
     companion object Static {
         fun tryParse(rawResponse: FSharpDiscriminatedUnion): FormatSelectionResponse? {
             return when {
-                rawResponse.Case == "Formatted" && rawResponse.Fields.size == 2 -> Formatted(rawResponse.Fields[0], rawResponse.Fields[1])
-                rawResponse.Case == "Error" && rawResponse.Fields.size == 2 -> Error(rawResponse.Fields[0], rawResponse.Fields[1])
+                rawResponse.Case == "Formatted" && rawResponse.Fields.size == 2 -> Formatted(
+                    rawResponse.Fields[0], rawResponse.Fields[1]
+                )
+                rawResponse.Case == "Error" && rawResponse.Fields.size == 2 -> Error(
+                    rawResponse.Fields[0], rawResponse.Fields[1]
+                )
                 else -> return null
             }
         }
@@ -66,9 +79,6 @@ value class Folder(val value: String)
 
 @JvmInline
 value class FantomasVersion(val value: String)
-
-@JvmInline
-value class FantomasExecutableFile(val value: String)
 
 sealed interface FantomasToolStartInfo {
     data class LocalTool(val workingDirectory: Folder) : FantomasToolStartInfo
