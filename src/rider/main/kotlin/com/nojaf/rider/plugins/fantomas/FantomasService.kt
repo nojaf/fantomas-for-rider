@@ -8,7 +8,7 @@ import java.util.concurrent.CompletableFuture
 private sealed interface FantomasServiceError
 private object FileDoesNotExist : FantomasServiceError
 private object FilePathIsNotAbsolute : FantomasServiceError
-private object InCompatibleVersionFound : FantomasServiceError
+private data class InCompatibleVersionFound(val message: String) : FantomasServiceError
 private data class DaemonCouldNotBeStarted(val reason: String) : FantomasServiceError
 
 private fun getFolderFor(filePath: String): Either<FantomasServiceError, Folder> {
@@ -56,8 +56,8 @@ class LspFantomasService : FantomasService {
 
         when (val existingVersion = folderToVersion[folder].toOption()) {
             is None -> {
-                return when (val version = findFantomasTool(folder)) {
-                    is Either.Left -> InCompatibleVersionFound.left()
+                return when (val version = findFantomasTool(logger, folder)) {
+                    is Either.Left -> InCompatibleVersionFound(version.value.message).left()
                     is Either.Right -> {
                         folderToVersion[folder] = version.value
                         findOrCreateDaemon(version.value)

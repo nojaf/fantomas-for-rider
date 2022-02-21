@@ -22,7 +22,7 @@ private fun isCompatibleFantomasVersion(version: String): Boolean {
 }
 
 // Either return a compatible Fantomas version of an error for the log
-private fun runToolListCmd(workingDir: Folder, globalFlag: Boolean): Either<String, FantomasVersion> {
+private fun runToolListCmd(logger: Logger, workingDir: Folder, globalFlag: Boolean): Either<String, FantomasVersion> {
     fun runCommand(workingDir: Folder, globalFlag: Boolean): Either<String, List<String>> {
         try {
             val proc = (if (globalFlag) ProcessBuilder("dotnet", "tool", "list", "-g") else ProcessBuilder(
@@ -37,9 +37,11 @@ private fun runToolListCmd(workingDir: Folder, globalFlag: Boolean): Either<Stri
                 }
             if (proc.exitValue() != 0) {
                 val error = proc.errorStream.bufferedReader().readText(); println(error)
+                logger.error(error)
             }
             return proc.inputStream.bufferedReader().readLines().right()
         } catch (e: IOException) {
+            logger.error(e)
             return e.toString().left()
         }
     }
@@ -47,31 +49,40 @@ private fun runToolListCmd(workingDir: Folder, globalFlag: Boolean): Either<Stri
     val listType = (if (globalFlag) "global" else "local")
 
     return runCommand(workingDir, globalFlag).map { lines ->
+        val cmd = if (globalFlag) "dotnet tool list -g" else "dotnet tool list"
+        val linesConcat = lines.joinToString("\n");
+        logger.info("Running $cmd returned:\n$linesConcat")
         val fantomasVersionEntry: Option<Either<String, FantomasVersion>> =
             // First two lines are table header
             lines.drop(2).mapNotNull { line ->
-                    val parts = line.trim().split(" ").filter { it.isBlank().not() }
-                    if (parts.size >= 2 && (parts[0] == "fantomas-tool" || parts[0] == "fantomas")) parts[1] else null
-                }.firstOrNone().map {
-                    if (isCompatibleFantomasVersion(it)) FantomasVersion(it).right()
-                    else "Could not find any compatible install of fantomas or fantomas-tool, got $it for $listType list.".left()
-                }
+                val parts = line.trim().split(" ").filter { it.isBlank().not() }
+                if (parts.size >= 2 && (parts[0] == "fantomas-tool" || parts[0] == "fantomas")) parts[1] else null
+            }.firstOrNone().map {
+                if (isCompatibleFantomasVersion(it)) FantomasVersion(it).right()
+                else "Could not find any compatible install of fantomas or fantomas-tool, got $it for $listType list.".left()
+            }
         return fantomasVersionEntry.getOrElse { "Could not find any install of fantomas or fantomas-tool in $listType list.".left() }
     }
 }
 
 private val isWindows = (System.getProperty("os.name").startsWith("Windows"))
 
-fun findFantomasTool(workingDir: Folder): Either<NoCompatibleVersionFound, FantomasToolFound> {
-    return runToolListCmd(workingDir, false).map { FantomasToolFound(it, FantomasToolStartInfo.LocalTool(workingDir)) }
+fun findFantomasTool(logger: Logger, workingDir: Folder): Either<NoCompatibleVersionFound, FantomasToolFound> {
+    return runToolListCmd(logger, workingDir, false)
+        .map {
+            FantomasToolFound(
+                it,
+                FantomasToolStartInfo.LocalTool(workingDir)
+            )
+        }
         .flatMapLeft {
-            when (val globalResult = runToolListCmd(workingDir, true)) {
-                is Either.Left -> NoCompatibleVersionFound().left()
+            when (val globalResult = runToolListCmd(logger, workingDir, true)) {
+                is Either.Left -> globalResult.value.left()
                 is Either.Right -> {
                     FantomasToolFound(globalResult.value, FantomasToolStartInfo.GlobalTool).right()
                 }
             }
-        }.mapLeft { NoCompatibleVersionFound() }
+        }.mapLeft { e: String -> NoCompatibleVersionFound(e) }
 }
 
 fun createFor(logger: Logger, startInfo: FantomasToolStartInfo): Either<String, RunningFantomasTool> {

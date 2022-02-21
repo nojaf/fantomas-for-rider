@@ -87,7 +87,7 @@ sealed interface FantomasToolStartInfo {
 
 data class FantomasToolFound(val version: FantomasVersion, val startInfo: FantomasToolStartInfo)
 
-class NoCompatibleVersionFound
+class NoCompatibleVersionFound(val message: String)
 
 val minimalVersion = SemVer.parse("4.6.0-alpha-004")
 

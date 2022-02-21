@@ -1,15 +1,15 @@
 <idea-plugin require-restart="true">
     <id>com.nojaf.rider.plugins.fantomas</id>
     <name>Fantomas</name>
-    <version>0.1.1</version>
+    <version>0.2.1</version>
     <vendor url="https://github.com/nojaf/fantomas-for-rider">nojaf</vendor>
-    <idea-version since-build="231.*" until-build="231.*" />
+    <idea-version since-build="231.*" />
     <depends>com.intellij.modules.rider</depends>
 
     <description>
         <![CDATA[
 <p>This is an experimental plugin that would allow you to use your own fantomas-tool version in Rider.</p>
-<p>You need a compatible version of <a href="https://github.com/fsprojects/fantomas/blob/4.6/docs/Daemon%20mode.md" target="_blank">fantomas-tool</a> installed locally or globally.<br >
+<p>You need a compatible version of <a href="https://github.com/fsprojects/fantomas/blob/master/docs/Daemon%20mode.md" target="_blank">fantomas-tool</a> installed locally or globally.<br >
 If the prerequisites are met, you can format entire F# files using your own Fantomas installation. The default hot keys are <code>ctrl + shift + ;</code>.</p>
 <p>How is this different from the default F# plugin? Well, currently you cannot choose your own version of Fantomas inside the default plugin, this plugin allows you to overcome this.</p>
 <p>Please note that this was a fun experiment and is not the long term solution.</p>

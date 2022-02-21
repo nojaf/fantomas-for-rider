@@ -81,7 +81,7 @@ class FormatCodeAction :
                     project,
                     "No compatible tool was found.",
                     """<html>Could not find a local of global install of a compatible fantomas-tool.
-Please read <a href="https://github.com/fsprojects/fantomas/blob/4.6/docs/Daemon%20mode.md" target="_blank">the documentation</a> for more details.""",
+Please read <a href="https://github.com/fsprojects/fantomas/blob/master/docs/Daemon%20mode.md" target="_blank">the documentation</a> for more details.""",
                     NotificationType.ERROR
                 )
             }
