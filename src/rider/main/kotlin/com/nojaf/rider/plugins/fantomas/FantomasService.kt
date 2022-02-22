@@ -43,7 +43,7 @@ class LspFantomasService : FantomasService {
     private val daemons = mutableMapOf<FantomasVersion, RunningFantomasTool>()
     private val folderToVersion = mutableMapOf<Folder, FantomasToolFound>()
 
-    private fun getDaemonFromFolder(folder: Folder): Either<FantomasServiceError, RunningFantomasTool> {
+    private fun getDaemonFromFolder(folder: Folder,  dotnetCliPath: String?): Either<FantomasServiceError, RunningFantomasTool> {
         fun findOrCreateDaemon(toolFound: FantomasToolFound): Either<FantomasServiceError, RunningFantomasTool> {
             return when (val daemon = createFor(logger, toolFound.startInfo)) {
                 is Either.Left -> DaemonCouldNotBeStarted(daemon.value).left()
@@ -76,8 +76,8 @@ class LspFantomasService : FantomasService {
         }
     }
 
-    private fun getDaemon(filePath: String): Either<FantomasServiceError, RunningFantomasTool> {
-        return getFolderFor(filePath).flatMap { folder -> getDaemonFromFolder(folder) }
+    private fun getDaemon(filePath: String, dotnetCliPath: String?): Either<FantomasServiceError, RunningFantomasTool> {
+        return getFolderFor(filePath).flatMap { folder -> getDaemonFromFolder(folder, dotnetCliPath: String?) }
     }
 
     override fun version(filePath: String): CompletableFuture<FantomasResponse> {
@@ -91,7 +91,7 @@ class LspFantomasService : FantomasService {
     }
 
     override fun formatDocument(request: FormatDocumentRequest): CompletableFuture<FantomasResponse> {
-        return when (val daemon = getDaemon(request.filePath)) {
+        return when (val daemon = getDaemon(request.filePath, request.dotnetCliPath)) {
             is Either.Left -> mapFantomasServiceErrorToFantomasResponse(request.filePath, daemon.value)
             is Either.Right -> {
                 return daemon.value.client.formatDocument(request).thenApply {

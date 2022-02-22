@@ -13,7 +13,8 @@ data class Configuration(val Case: String, val Fields: Array<EndOfLine>)
 data class FormatDocumentRequest(
     val sourceCode: String,
     val filePath: String,
-    val config: Configuration = Configuration("Some", arrayOf(EndOfLine("lf")))
+    val config: Configuration = Configuration("Some", arrayOf(EndOfLine("lf"))),
+    val dotnetCliPath: String? = null
 )
 
 data class FormatSelectionRange(val startLine: Int, val startColumn: Int, val endLine: Int, val endColumn: Int)
