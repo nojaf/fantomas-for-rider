@@ -56,7 +56,7 @@ class LspFantomasService : FantomasService {
 
         when (val existingVersion = folderToVersion[folder].toOption()) {
             is None -> {
-                return when (val version = findFantomasTool(logger, folder)) {
+                return when (val version = findFantomasTool(logger, folder, dotnetCliPath)) {
                     is Either.Left -> InCompatibleVersionFound(version.value.message).left()
                     is Either.Right -> {
                         folderToVersion[folder] = version.value
@@ -77,15 +77,15 @@ class LspFantomasService : FantomasService {
     }
 
     private fun getDaemon(filePath: String, dotnetCliPath: String?): Either<FantomasServiceError, RunningFantomasTool> {
-        return getFolderFor(filePath).flatMap { folder -> getDaemonFromFolder(folder, dotnetCliPath: String?) }
+        return getFolderFor(filePath).flatMap { folder -> getDaemonFromFolder(folder, dotnetCliPath) }
     }
 
-    override fun version(filePath: String): CompletableFuture<FantomasResponse> {
-        return when (val daemon = getDaemon(filePath)) {
-            is Either.Left -> mapFantomasServiceErrorToFantomasResponse(filePath, daemon.value)
+    override fun version(request: VersionRequest): CompletableFuture<FantomasResponse> {
+        return when (val daemon = getDaemon(request.filePath, request.dotnetCliPath)) {
+            is Either.Left -> mapFantomasServiceErrorToFantomasResponse(request.filePath, daemon.value)
             is Either.Right -> {
                 daemon.value.client.version()
-                    .thenApply { version -> FantomasResponse(FantomasResponseCode.Version, filePath, version.some()) }
+                    .thenApply { version -> FantomasResponse(FantomasResponseCode.Version, request.filePath, version.some()) }
             }
         }
     }
