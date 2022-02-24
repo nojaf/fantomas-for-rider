@@ -12,6 +12,7 @@ import com.intellij.openapi.editor.Document
 import com.intellij.openapi.project.Project
 import com.jetbrains.rdclient.editors.getPsiFile
 import com.jetbrains.rider.actions.base.RiderAnAction
+import com.jetbrains.rider.runtime.RiderDotNetActiveRuntimeHost
 
 class FormatCodeAction :
     RiderAnAction("FormatWithFantomas", "Format with Fantomas", "Format the current file with Fantomas") {
@@ -121,7 +122,8 @@ Please read <a href="https://github.com/fsprojects/fantomas/blob/master/docs/Dae
         val text = psiFile?.text
         val path = psiFile?.virtualFile?.path
         if (project != null && document != null && text != null && path != null) {
-            fantomasService.formatDocument(FormatDocumentRequest(text, path)).handle { response, ex ->
+            val dotnetCliPath = RiderDotNetActiveRuntimeHost.getInstance(project).dotNetCoreRuntime.value?.cliExePath
+            fantomasService.formatDocument(FormatDocumentRequest(text, path, dotnetCliPath = dotnetCliPath)).handle { response, ex ->
                 if (ex != null) {
                     logger.error(ex)
                 } else {

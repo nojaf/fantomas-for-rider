@@ -22,11 +22,14 @@ private fun isCompatibleFantomasVersion(version: String): Boolean {
 }
 
 // Either return a compatible Fantomas version of an error for the log
-private fun runToolListCmd(logger: Logger, workingDir: Folder, globalFlag: Boolean): Either<String, FantomasVersion> {
+private fun runToolListCmd(
+    logger: Logger, workingDir: Folder, globalFlag: Boolean, dotnetCliPath: String?
+): Either<String, FantomasVersion> {
     fun runCommand(workingDir: Folder, globalFlag: Boolean): Either<String, List<String>> {
         try {
-            val proc = (if (globalFlag) ProcessBuilder("dotnet", "tool", "list", "-g") else ProcessBuilder(
-                "dotnet", "tool", "list"
+            val processName = dotnetCliPath ?: "dotnet"
+            val proc = (if (globalFlag) ProcessBuilder(processName, "tool", "list", "-g") else ProcessBuilder(
+                processName, "tool", "list"
             )).directory(File(workingDir.value)).redirectOutput(ProcessBuilder.Redirect.PIPE)
                 .redirectError(ProcessBuilder.Redirect.PIPE).let { builder ->
                     val env = builder.environment()
@@ -50,7 +53,7 @@ private fun runToolListCmd(logger: Logger, workingDir: Folder, globalFlag: Boole
 
     return runCommand(workingDir, globalFlag).map { lines ->
         val cmd = if (globalFlag) "dotnet tool list -g" else "dotnet tool list"
-        val linesConcat = lines.joinToString("\n");
+        val linesConcat = lines.joinToString("\n")
         logger.info("Running $cmd returned:\n$linesConcat")
         val fantomasVersionEntry: Option<Either<String, FantomasVersion>> =
             // First two lines are table header
@@ -67,31 +70,33 @@ private fun runToolListCmd(logger: Logger, workingDir: Folder, globalFlag: Boole
 
 private val isWindows = (System.getProperty("os.name").startsWith("Windows"))
 
-fun findFantomasTool(logger: Logger, workingDir: Folder): Either<NoCompatibleVersionFound, FantomasToolFound> {
-    return runToolListCmd(logger, workingDir, false)
-        .map {
-            FantomasToolFound(
-                it,
-                FantomasToolStartInfo.LocalTool(workingDir)
-            )
-        }
-        .flatMapLeft {
-            when (val globalResult = runToolListCmd(logger, workingDir, true)) {
-                is Either.Left -> globalResult.value.left()
-                is Either.Right -> {
-                    FantomasToolFound(globalResult.value, FantomasToolStartInfo.GlobalTool).right()
-                }
+fun findFantomasTool(
+    logger: Logger, workingDir: Folder, dotnetCliPath: String?
+): Either<NoCompatibleVersionFound, FantomasToolFound> {
+    return runToolListCmd(logger, workingDir, false, dotnetCliPath).map {
+        FantomasToolFound(
+            it, FantomasToolStartInfo.LocalTool(workingDir, dotnetCliPath)
+        )
+    }.flatMapLeft {
+        when (val globalResult = runToolListCmd(logger, workingDir, true, dotnetCliPath)) {
+            is Either.Left -> globalResult.value.left()
+            is Either.Right -> {
+                FantomasToolFound(globalResult.value, FantomasToolStartInfo.GlobalTool).right()
             }
-        }.mapLeft { e: String -> NoCompatibleVersionFound(e) }
+        }
+    }.mapLeft { e: String -> NoCompatibleVersionFound(e) }
 }
 
 fun createFor(logger: Logger, startInfo: FantomasToolStartInfo): Either<String, RunningFantomasTool> {
     val processStart = when (startInfo) {
-        is FantomasToolStartInfo.LocalTool -> ProcessBuilder("dotnet", "fantomas", "--daemon").directory(
-            File(
-                startInfo.workingDirectory.value
+        is FantomasToolStartInfo.LocalTool -> {
+            val processName = startInfo.dotnetCliPath ?: "dotnet"
+            ProcessBuilder(processName, "fantomas", "--daemon").directory(
+                File(
+                    startInfo.workingDirectory.value
+                )
             )
-        )
+        }
         is FantomasToolStartInfo.GlobalTool -> {
             val userProfile = System.getProperty("user.home")
             val fantomasExecutableFile = if (isWindows) "fantomas.exe" else "fantomas"

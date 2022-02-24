@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.2.2]
+
+### Changed
+- Use `RiderDotNetActiveRuntimeHost.getInstance(project).dotNetCoreRuntime.value?.cliExePath` if available.
+
 ## [0.2.1]
 
 ### Changed

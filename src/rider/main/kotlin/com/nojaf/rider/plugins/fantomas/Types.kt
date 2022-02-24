@@ -13,7 +13,8 @@ data class Configuration(val Case: String, val Fields: Array<EndOfLine>)
 data class FormatDocumentRequest(
     val sourceCode: String,
     val filePath: String,
-    val config: Configuration = Configuration("Some", arrayOf(EndOfLine("lf")))
+    val config: Configuration = Configuration("Some", arrayOf(EndOfLine("lf"))),
+    val dotnetCliPath: String? = null
 )
 
 data class FormatSelectionRange(val startLine: Int, val startColumn: Int, val endLine: Int, val endColumn: Int)
@@ -81,7 +82,7 @@ value class Folder(val value: String)
 value class FantomasVersion(val value: String)
 
 sealed interface FantomasToolStartInfo {
-    data class LocalTool(val workingDirectory: Folder) : FantomasToolStartInfo
+    data class LocalTool(val workingDirectory: Folder, val dotnetCliPath: String?) : FantomasToolStartInfo
     object GlobalTool : FantomasToolStartInfo
 }
 
@@ -102,8 +103,10 @@ enum class FantomasResponseCode {
 
 data class FantomasResponse(val code: FantomasResponseCode, val filePath: String, val content: Option<String>)
 
+data class VersionRequest(val filePath:String, val dotnetCliPath: String?)
+
 interface FantomasService : Disposable {
-    fun version(filePath: String): CompletableFuture<FantomasResponse>
+    fun version(request: VersionRequest): CompletableFuture<FantomasResponse>
     fun formatDocument(request: FormatDocumentRequest): CompletableFuture<FantomasResponse>
     fun clearCache()
 }
