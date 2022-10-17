@@ -168,7 +168,7 @@ runIde {
 patchPluginXml {
     // TODO: See also org.jetbrains.changelog: https://github.com/JetBrains/gradle-changelog-plugin
     def changelogText = file("${rootDir}/CHANGELOG.md").text
-    def changelogMatches = changelogText =~ /(?s)(-.+?)(?=##|$)/
+    def changelogMatches = changelogText =~ /(?s)(-\s.+?)(?=##|$)/
 
     changeNotes = changelogMatches.collect {
         it[1].replaceAll(/(?s)\r?\n/, "<br />\n")
