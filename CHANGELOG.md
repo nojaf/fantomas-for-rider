@@ -1,5 +1,10 @@
 # Changelog
 
+### [0.5.0-alpha-001]
+
+### Changed
+- Update to Rider 2022.3 EAP
+
 ## [0.4.0]
 
 ### Changed
