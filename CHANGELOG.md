@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.0]
+
+### Changed
+- Update to Rider 2022.2
+
 ## [0.3.0]
 
 ### Changed

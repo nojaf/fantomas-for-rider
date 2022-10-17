@@ -9,10 +9,10 @@
     <description>
         <![CDATA[
 <p>This is an experimental plugin that would allow you to use your own fantomas-tool version in Rider.</p>
+<p><strong>This plugin is only meant for debugging proposes, to be used by the Fantomas maintainers</strong>.</p>
+<p>As of Rider 2022.2, the usage of custom Fantomas version is supported by the default F# plugin.</p>
 <p>You need a compatible version of <a href="https://github.com/fsprojects/fantomas/blob/master/docs/Daemon%20mode.md" target="_blank">fantomas-tool</a> installed locally or globally.<br >
 If the prerequisites are met, you can format entire F# files using your own Fantomas installation. The default hot keys are <code>ctrl + shift + ;</code>.</p>
-<p>How is this different from the default F# plugin? Well, currently you cannot choose your own version of Fantomas inside the default plugin, this plugin allows you to overcome this.</p>
-<p>Please note that this was a fun experiment and is not the long term solution.</p>
 ]]>
     </description>
     <actions>
