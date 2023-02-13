@@ -1,7 +1,6 @@
 package com.nojaf.rider.plugins.fantomas
 
 import com.intellij.notification.NotificationGroupManager
-import com.intellij.notification.NotificationListener
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -38,7 +37,7 @@ class FormatCodeAction :
     private fun notify(project: Project, title: String, content: String, type: NotificationType) {
         val showInfoMessage = Runnable {
             NotificationGroupManager.getInstance().getNotificationGroup("Fantomas")
-                .createNotification(title, content, type).setListener(NotificationListener.UrlOpeningListener(true))
+                .createNotification(title, content, type)
                 .notify(project)
         }
         WriteCommandAction.runWriteCommandAction(project, showInfoMessage)

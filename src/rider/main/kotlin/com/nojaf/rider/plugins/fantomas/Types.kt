@@ -14,27 +14,36 @@ data class FormatDocumentRequest(
     val sourceCode: String,
     val filePath: String,
     val config: Configuration = Configuration("Some", arrayOf(EndOfLine("lf"))),
-    val dotnetCliPath: String? = null
+    val dotnetCliPath: String? = null,
+    val cursor: FormatCursorPosition? = null
+)
+
+data class FormatCursorPosition(
+    val line: Int, val column: Int
 )
 
 data class FormatSelectionRange(val startLine: Int, val startColumn: Int, val endLine: Int, val endColumn: Int)
 data class FormatSelectionRequest(val sourceCode: String, val filePath: String, val range: FormatSelectionRange)
 
 sealed interface FormatDocumentResponse {
-    data class Formatted(val fileName: String, val formattedContent: String) : FormatDocumentResponse
+    data class Formatted(val fileName: String, val formattedContent: String, val cursor: FormatCursorPosition?) :
+        FormatDocumentResponse
+
     data class Unchanged(val fileName: String) : FormatDocumentResponse
     data class Error(val fileName: String, val formattingError: String) : FormatDocumentResponse
     data class IgnoredFile(val fileName: String) : FormatDocumentResponse
     companion object Static {
         fun tryParse(rawResponse: FSharpDiscriminatedUnion): FormatDocumentResponse? {
             return when {
-                rawResponse.Case == "Formatted" && rawResponse.Fields.size == 2 -> Formatted(
-                    rawResponse.Fields[0], rawResponse.Fields[1]
+                rawResponse.Case == "Formatted" && (rawResponse.Fields.size == 2 || rawResponse.Fields.size == 3) -> Formatted(
+                    rawResponse.Fields[0], rawResponse.Fields[1], null
                 )
+
                 rawResponse.Case == "Unchanged" && rawResponse.Fields.size == 1 -> Unchanged(rawResponse.Fields[0])
                 rawResponse.Case == "Error" && rawResponse.Fields.size == 2 -> Error(
                     rawResponse.Fields[0], rawResponse.Fields[1]
                 )
+
                 rawResponse.Case == "IgnoredFile" && rawResponse.Fields.size == 1 -> IgnoredFile(rawResponse.Fields[0])
                 else -> return null
             }
@@ -51,9 +60,11 @@ sealed interface FormatSelectionResponse {
                 rawResponse.Case == "Formatted" && rawResponse.Fields.size == 2 -> Formatted(
                     rawResponse.Fields[0], rawResponse.Fields[1]
                 )
+
                 rawResponse.Case == "Error" && rawResponse.Fields.size == 2 -> Error(
                     rawResponse.Fields[0], rawResponse.Fields[1]
                 )
+
                 else -> return null
             }
         }
@@ -103,7 +114,7 @@ enum class FantomasResponseCode {
 
 data class FantomasResponse(val code: FantomasResponseCode, val filePath: String, val content: Option<String>)
 
-data class VersionRequest(val filePath:String, val dotnetCliPath: String?)
+data class VersionRequest(val filePath: String, val dotnetCliPath: String?)
 
 interface FantomasService : Disposable {
     fun version(request: VersionRequest): CompletableFuture<FantomasResponse>
