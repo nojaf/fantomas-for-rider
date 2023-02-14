@@ -1,12 +1,17 @@
 # Changelog
 
-### [0.5.0]
+## [0.5.1]
+
+### Changed
+- Update compatibility Range to 2022.3
+
+## [0.5.0]
 
 ### Changed
 - Update to Rider 2022.3 stable
 - Add fix for Fantomas v6.0 alpha
 
-### [0.5.0-alpha-001]
+## [0.5.0-alpha-001]
 
 ### Changed
 - Update to Rider 2022.3 EAP
